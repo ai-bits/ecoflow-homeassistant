@@ -1,0 +1,30 @@
+- id: "1720824908343"
+  alias: EcoFlow
+  description: EcoFlow
+  trigger:
+    - platform: time_pattern
+      seconds: "1"
+  condition: []
+  action:
+    - service: pyscript.set_ef
+      data:
+        EcoflowKey: !secret ecoflow_key
+        EcoflowSecret: !secret ecoflow_secret
+        PsSnr: !secret ps_snr
+        DeltaSnr: !secret delta_snr
+        ShrdzmSnr: !secret shrdzm_snr
+  mode: single
+
+- id: "1720824908344"
+  alias: Delta
+  description: Delta unit_timeout never
+  trigger:
+    - platform: time_pattern
+      minutes: /20
+  condition: []
+  action:
+    - service: select.select_option
+      target:
+        entity_id: select.delta_2_max_0115_unit_timeout
+      data:
+        option: Never
