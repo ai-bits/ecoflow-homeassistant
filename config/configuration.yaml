@@ -12,8 +12,9 @@ scene: !include scenes.yaml
 logger:
   #default: info #too much
   logs:
-    pyscript: info #NOGO #use log.warning("var {var}") #with logger.set_level() in set_ef:
-    pyscript.file.set_ef.set_ef: info #NOGO? see set_ef #logger.set_level(**{"pyscript.file.set_ef.set_ef": "info"})
+    ##pyscript: info #NOGO #use log.warning("var {var}") #with logger.set_level() in set_ef:
+    ##pyscript.file.set_ef.set_ef: info #NOGO? see set_ef #logger.set_level(**{"pyscript.file.set_ef.set_ef": "info"})
+    custom_components.pyscript: debug #?Sven
     #custom_components.solarman.solarman: error #NOGO? see set_ef #logger.set_level() too
 
 pyscript:
