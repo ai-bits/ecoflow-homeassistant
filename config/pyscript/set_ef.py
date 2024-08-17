@@ -1,4 +1,4 @@
-# v0.1.8 20240810 1010 #set_ef.py
+# v0.2.0 20240817 1600 logging quick fix (hopefully) while waiting for battery repair
 
 # get / set data via EF API
 # based on https://github.com/svenerbe/ecoflow_dynamic_power_adjustment
@@ -150,10 +150,6 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     Automation = state.get('input_boolean.automate') == 'on'
     #= state.get('input_boolean.ran_today') == 'on' #all Monsieur Claude 3.5 #NOT: pyscript.state()
     #NOT: state.is_state('input_boolean.ran_today', 'on') #NOT: pyscript.is_state()
-
-    #log.info() #needs logger: logs: pyscript: info in configuration.yaml #NOGO!!?
-    logger.set_level(**{"pyscript.file.set_ef.set_ef": "info"}) #pyscript.file.set_ef.set_ef: info #in configuration.yaml NOGO?
-    logger.set_level(**{"custom_components.solarman.solarman": "error"})
 
     #log.warning(f"set_ef PowerPlus {PowerPlus}") #shrdzm 1.7 P+ in watts Wirkleistung aktueller Leistungsbezug momentane Leistungsaufnahme
     #log.warning(f"set_ef InvOutManual target {InvOutManual} BatteryCharge {BatteryCharge}")

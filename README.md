@@ -23,6 +23,11 @@ Would have never been able to uncover and prove the battery pack fault without i
 <a href="https://github.com/svenerbe/ecoflow_dynamic_power_adjustment/">Sven's pyscript</a> was the first code I found working to change inverter_output_watts.<br>
 Running on top of HomeAssistant initially looked like a huge burden, complicating things, but turned out vastly advantageous with many of HA's features.<br>
 </p>
+<h3>Version History</h3>
+<p>
+0.2.0 20240817 1600: logging quick fix (hopefully &#128517; ) while waiting for battery repair<br>
+0.1.8 20240810 1010: Initial <em>dump</em>
+</p>
 <h3>Real-World Info</h3>
 <p>
 I'm trying to present a simple, real-world solution for some average household.<br>
