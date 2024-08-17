@@ -10,12 +10,12 @@ script: !include scripts.yaml
 scene: !include scenes.yaml
 
 logger:
-  #default: info #too much
+  default: warning
   logs:
-    ##pyscript: info #NOGO #use log.warning("var {var}") #with logger.set_level() in set_ef:
-    ##pyscript.file.set_ef.set_ef: info #NOGO? see set_ef #logger.set_level(**{"pyscript.file.set_ef.set_ef": "info"})
-    custom_components.pyscript: debug #?Sven
-    #custom_components.solarman.solarman: error #NOGO? see set_ef #logger.set_level() too
+    custom_components.pyscript: warning
+    custom_components.solarman: error
+    custom_components.solarman.sensor: error
+    homeassistant.components.pyscript: warning
 
 pyscript:
   allow_all_imports: true
@@ -35,7 +35,7 @@ input_number:
     step: 5
     unit_of_measurement: "%"
     icon: mdi:battery-charging-100
-    initial: 70
+    initial: 50
 
 input_boolean:
   automate:
