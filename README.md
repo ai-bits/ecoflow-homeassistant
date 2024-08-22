@@ -25,6 +25,7 @@ Running on top of HomeAssistant initially looked like a huge burden, complicatin
 </p>
 <h3>Version History</h3>
 <p>
+0.2.2 20240822 1420 Snr v Name conflicts quick fix after new Delta and PS re-add in HA
 0.2.0 20240817 1600: logging quick fix (hopefully &#128517; ) while waiting for battery repair<br>
 0.1.8 20240810 1010: Initial <em>dump</em>
 </p>
