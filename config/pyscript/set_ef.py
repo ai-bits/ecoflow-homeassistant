@@ -1,4 +1,4 @@
-# v0.2.0 20240817 1600 logging quick fix (hopefully) while waiting for battery repair
+# v0.2.2 20240822 1420 Snr v Name conflicts quick fix after new Deltaa and PS re-add
 
 # get / set data via EF API
 # based on https://github.com/svenerbe/ecoflow_dynamic_power_adjustment
@@ -140,12 +140,14 @@ def set_morning(value, value2):
 #parameters with default (was: Automation=False) must go behind others
 @service
 def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, ShrdzmSnr=None):
+    PsName = 'powerstream_1' #will be derived from Snr in rewrite; quick fix where PsSnr didn't work any more after ha changes
+    DeltaName = 'delta_2_max_2'
     #only pass secrets as parms; other values public anyway
     #parms added: ShrdzmSnr
     #parms removed, replaced by direct state.get() when necessary:
     #, InvOutManual=None, BatteryCharge=None, PowerPlus=None, Automation=False
     InvOutManual = float(state.get('input_number.inv_out_manual'))
-    BatteryCharge = int(state.get('sensor.' + PsSnr + '_battery_charge'))
+    BatteryCharge = float(state.get('sensor.' + PsName + '_battery_charge')) #was int() & PsSnr
     PowerPlus = int(state.get('sensor.shrdzm_' + ShrdzmSnr + '_1_7_0'))
     Automation = state.get('input_boolean.automate') == 'on'
     #= state.get('input_boolean.ran_today') == 'on' #all Monsieur Claude 3.5 #NOT: pyscript.state()
@@ -171,7 +173,7 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     # collect status of the devices
     payload = get_api(url_device,key,secret,{"sn":PsSnr})
 
-    check_ps_status = check_if_device_is_online(PsSnr,payload)
+    check_ps_status = check_if_device_is_online(PsSnr, payload)
 
     #get_device_name from Snr when used instead of Snr
     #url_device = 'https://api-e.ecoflow.com/iot-open/sign/device/list' #defined above
@@ -209,9 +211,9 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     # now = datetime.now().hour
     # log.warning(f"sunset {sunset}")
     # log.warning(f"now {now}")
-    pv_ps = (float(hass.states.get('sensor.' + PsSnr + '_solar_1_watts').state) +
-        float(hass.states.get('sensor.' + PsSnr + '_solar_2_watts').state)) #long expression: () or space\
-    pv_delta = float(hass.states.get('sensor.delta_2_max_0115_total_in_power').state)
+    pv_ps = (float(hass.states.get('sensor.' + PsName + '_solar_1_watts').state) +
+        float(hass.states.get('sensor.' + PsName + '_solar_2_watts').state)) #long expression: () or space\
+    pv_delta = float(hass.states.get('sensor.' + DeltaName + '_total_in_power').state) #was hardcoded
     pv_all = pv_ps + pv_delta
     #tmp = min(math.floor((pv_all - pv_all/5)/10)*10, PowerPlus, 800) #pv_all - 20%
     #tmp = tmp if tmp >= 0 else 0
