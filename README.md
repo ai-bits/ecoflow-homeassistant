@@ -7,6 +7,11 @@ Tamed: hot-running PowerStream<sup>1)</sup> + Delta 2 Max<sup>2)</sup> + limited
 <p>
 <b>Manage PowerStream inverter_out_watts and Delta battery_charge with data from an energy meter (SHRDZM, Shelly Pro 3EM) using HA and the EcoFlow API, replacing a somewhat reality-detached app and SmartPlugs with compact, one-page browser dashboards on PC or mobile</b>
 </p>
+<p>
+<b>IMPORTANT NOTE PER 20240823: In another "stroke of genius" EcoFlow made their mobile app prerequisite for read-outs via the API.</b><br>
+IOW: Since mid August a HomeAssistant (dashboard) will only get (e.g. Delta charge_level) data when you bring the mobile app into the foreground and select the device.<br>
+Sorry to say: THIS OBLITERATES THE PYSCRIPT ALGO. If the capitalization sounds like annoyed shouting - it is.
+</p>
 <h3>Installation in HomeAssistant Supervised with HACS, EcoFlow Cloud and VS Code already in Place</h3>
 <p>
 Use VS Code HA integration and the HA file structure in Code > Explorer in sidebar:<br>
