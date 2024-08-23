@@ -30,7 +30,7 @@ Running on top of HomeAssistant initially looked like a huge burden, complicatin
 </p>
 <h3>Version History</h3>
 <p>
-0.2.2 20240822 1420 Snr v Name conflicts quick fix after new Delta and PS re-add in HA
+0.2.2 20240822 1420 Snr v Name conflicts quick fix after new Delta and PS re-add in HA<br>
 0.2.0 20240817 1600: logging quick fix (hopefully &#128517; ) while waiting for battery repair<br>
 0.1.8 20240810 1010: Initial <em>dump</em>
 </p>
@@ -40,7 +40,7 @@ I'm trying to present a simple, real-world solution for some average household.<
 With our constellation we should consume the PV energy during the morning and only trickle-feed the battery.<br>
 The battery quickly fills up on sunny days around noon (1.5h) and much surplus is wasted in the afternoon. After sunset it helps for a few hours.<br>
 <b>The 2kWh are too little for us, but a nice thunderstorm-outage buffer and more storage in this class would hardly pay.</b><br>
-If my favourite (e-)car brand offered good home integration I would go for 10kWh today and use the car as a battery.
+If my favourite (e-)car brand offered good home integration I would go for 10kWp today and use the car as a battery.
 </p>
 <p>
 <b>One of the noteable differences to standard installations:</b><br>
