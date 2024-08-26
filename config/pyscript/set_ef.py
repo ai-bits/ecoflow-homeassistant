@@ -1,4 +1,4 @@
-# v0.2.2 20240822 1420 Snr v Name conflicts quick fix after new Deltaa and PS re-add
+# v0.2.10 20240826 2000 OFFICIAL API GENERIC for all; major clean-up
 
 # get / set data via EF API
 # based on https://github.com/svenerbe/ecoflow_dynamic_power_adjustment
@@ -117,6 +117,24 @@ def check_if_device_is_online(SN=None, payload=None):
         print(f"device with SN '{desired_device_sn}' not found in data.")
         return "devices not found"
 
+#get_val of entity (generalized) via official api
+def get_val(quotas, url, key, secret, Snr):
+    params = {"quotas": quotas}
+    #log.warning(f"params {params}")
+    payload = post_api(url, key, secret, {"sn":Snr,"params":params})
+    #log.warning(f"payload.status_code {payload.status_code}")
+    if payload.status_code == 200:
+        try:
+            d = payload.json()['data'][quotas[0]] #[0]!
+            #log.warning(f"d {d}")
+            return d
+        except KeyError as e:
+            log.warning(f"Error accessing {quotas[0]} in payload")
+            return 0
+    else:
+        log.warning(f"payload.status_code {quotas[0]} not 200")
+        return 0
+
 #get_device_name from Snr when used instead of Snr
 def get_device_name(SN, payload):
     for device in payload.get('data', []):
@@ -140,84 +158,44 @@ def set_morning(value, value2):
 #parameters with default (was: Automation=False) must go behind others
 @service
 def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, ShrdzmSnr=None):
-    PsName = 'powerstream_1' #will be derived from Snr in rewrite; quick fix where PsSnr didn't work any more after ha changes
-    DeltaName = 'delta_2_max_2'
-    #only pass secrets as parms; other values public anyway
-    #parms added: ShrdzmSnr
-    #parms removed, replaced by direct state.get() when necessary:
-    #, InvOutManual=None, BatteryCharge=None, PowerPlus=None, Automation=False
-    InvOutManual = float(state.get('input_number.inv_out_manual'))
-    BatteryCharge = float(state.get('sensor.' + PsName + '_battery_charge')) #was int() & PsSnr
-    PowerPlus = int(state.get('sensor.shrdzm_' + ShrdzmSnr + '_1_7_0'))
-    Automation = state.get('input_boolean.automate') == 'on'
-    #= state.get('input_boolean.ran_today') == 'on' #all Monsieur Claude 3.5 #NOT: pyscript.state()
-    #NOT: state.is_state('input_boolean.ran_today', 'on') #NOT: pyscript.is_state()
-
-    #log.warning(f"set_ef PowerPlus {PowerPlus}") #shrdzm 1.7 P+ in watts Wirkleistung aktueller Leistungsbezug momentane Leistungsaufnahme
-    #log.warning(f"set_ef InvOutManual target {InvOutManual} BatteryCharge {BatteryCharge}")
-    #log.warning(f"set_ef ShrdzmSnr {ShrdzmSnr}")
-
     if PsSnr is None:
-        log.warning(f"PsSnr is not provided. Exiting function.") 
-        return  # Exit the function if PsSnr is None
-
+        log.warning(f"PsSnr=None, exiting") 
+        return
     url = 'https://api-e.ecoflow.com/iot-open/sign/device/quota' #api-e. instead of api. according to Günther Nid FB
     url_device = 'https://api-e.ecoflow.com/iot-open/sign/device/list' #api-e. instead of api.
-
     # (access) key & secret (key) from secrets.yaml
     key = EcoflowKey
     secret = EcoflowSecret
-
-    cmdCode = 'WN511_SET_PERMANENT_WATTS_PACK'
-
     # collect status of the devices
     payload = get_api(url_device,key,secret,{"sn":PsSnr})
-
     check_ps_status = check_if_device_is_online(PsSnr, payload)
+    PsName = 'powerstream_1' #will be derived from Snr in rewrite; quick fix where PsSnr didn't work any more after ha changes
+    DeltaName = 'delta_2_max_2'
 
-    #get_device_name from Snr when used instead of Snr
-    #url_device = 'https://api-e.ecoflow.com/iot-open/sign/device/list' #defined above
-    #device_list_payload = get_api(url_device, key, secret) # Fetch device list
-    # if device_list_payload is None:
-    #     log.error("Failed to fetch device list from API")
-    #     return
-    #log.warning(f"device_list_payload {json.dumps(device_list_payload, indent=2)}") # Log entire payload for debug
-    #DeltaName = get_device_name(DeltaSnr, device_list_payload) # Get device name Delta
-    ##log.warning(f"Delta 2 Max device name {DeltaName}")
-    #get_device_name end
+    #only pass secrets as parms; other values public anyway
+    #parms added: ShrdzmSnr
+    #parms removed, replaced by direct state.get() when necessary:
+    #, InvOutManual=None, was BatteryCharge=None, PowerPlus=None, Automation=False
+    InvOutManual = float(state.get('input_number.inv_out_manual'))
 
-    #permanentWatts = sensor.hw51<12char>_inverter_output_watts
-    # from PowerStream get (current) cur_permanentWatts
-    quotas = ["20_1.permanentWatts"]
-    params  = {"quotas":quotas}
+    cur_perm_w = get_val(["20_1.permanentWatts"], url, key, secret, PsSnr)
+    cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
+    input_number.battery_charge = get_val(["20_1.batSoc"], url, key, secret, PsSnr)
+    input_number.solar_1_watts = round(get_val(["20_1.pv1InputWatts"], url, key, secret, PsSnr) / 10)
+    input_number.solar_2_watts = round(get_val(["20_1.pv2InputWatts"], url, key, secret, PsSnr) / 10)
+    #was = float(hass.states.get('sensor.' + DeltaName + '_total_in_power').state)
+    input_number.total_in_power = get_val(["pd.wattsInSum"], url, key, secret, DeltaSnr)
+    #log.warning(f"input_number.total_in_power {input_number.total_in_power}")
+    pv_all = input_number.solar_1_watts + input_number.solar_2_watts + input_number.total_in_power
 
-    # if OK: cur_permanentWatts = permanentWatts / 10
-    # ELSE: cur_permanentWatts = 0 AND EXIT set_ef()
-    payload = post_api(url,key,secret,{"sn":PsSnr,"params":params})
-    if payload.status_code == 200:
-        try:
-            cur_permanentWatts = round(payload.json()['data']['20_1.permanentWatts'] / 10)
-        except KeyError as e:
-            log.warning(f"Error accessing data in payload:", e)
-            return  # Exit the function or handle the error appropriately
-    else:
-        cur_permanentWatts = 0
-        return 4, "Integration was not able to collect the current permanentWatts from EcoFlow PS!"
-
-    #log.warning(f"set_ef cur_permanentWatts ", cur_permanentWatts) #NOGO!
-    #log.warning(f"cur_permanentWatts {cur_permanentWatts}")
+    PowerPlus = int(state.get('sensor.shrdzm_' + ShrdzmSnr + '_1_7_0'))
+    #log.warning(f"PowerPlus {PowerPlus}") #shrdzm 1.7 P+ in watts Wirkleistung aktueller Leistungsbezug momentane Leistungsaufnahme
+    Automation = state.get('input_boolean.automate') == 'on'
 
     # sunset = datetime.fromisoformat(hass.states.get('sensor.sun_next_setting').state) #.hour
     # now = datetime.now().hour
     # log.warning(f"sunset {sunset}")
     # log.warning(f"now {now}")
-    pv_ps = (float(hass.states.get('sensor.' + PsName + '_solar_1_watts').state) +
-        float(hass.states.get('sensor.' + PsName + '_solar_2_watts').state)) #long expression: () or space\
-    pv_delta = float(hass.states.get('sensor.' + DeltaName + '_total_in_power').state) #was hardcoded
-    pv_all = pv_ps + pv_delta
-    #tmp = min(math.floor((pv_all - pv_all/5)/10)*10, PowerPlus, 800) #pv_all - 20%
-    #tmp = tmp if tmp >= 0 else 0
-    #log.warning(f"pv_ps {pv_ps} pv_delta {pv_delta} min(floor(pv_all - 20perc)) {tmp}")
 
     Morning = state.get('input_boolean.morning') == 'on'
     #log.warning(f"Morning {Morning}")
@@ -228,7 +206,7 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     if datetime.now().strftime('%H:%M') == state.get('sensor.sunrise_next_time'): #sunrise
         Morning = True
         RanToday = False
-    if Morning and BatteryCharge == 100:
+    if Morning and int(input_number.battery_charge) == 100:
         Morning = False
         RanToday = True
     #log.warning(f"Morning {Morning} RanToday {RanToday}")
@@ -246,8 +224,8 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
         #discharge_limit min and max can be set in configuration.yaml; in app set 0% and 100%; pyscript takes care
         #Delta often ignores values in app anyway; save for emergency
         #discharge_limit min is 30% to keep batt from standby at 20% when it used < 10%points in idle
-        if BatteryCharge < float(state.get('input_number.discharge_limit')):
-            #W/10 #tenths of watts #watts * 10
+        if int(input_number.battery_charge) < float(state.get('input_number.discharge_limit')):
+            #W / 10 #tenths of watts #watts * 10
             #was: set 10W to avoid battery standby as unit_timeout keeps changing to 30 mins
             #is: delta automation to set unit_timeout to Never should keep it from standby
             InvOutManual = 0 #in Morning fill up with all PV what idle and PS took during night
@@ -257,7 +235,7 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
                 #inline comment problem: number not allowed after # in following expression?!
                 if Morning:
                     #min of pv_all - 20%, P+ and 800 to put most energy into home and at least charge a little
-                    InvOutManual = min(math.floor((pv_all - pv_all/5)/10)*10, PowerPlus, 800)
+                    InvOutManual = min(math.floor((pv_all - pv_all / 5) / 10) * 10, PowerPlus, 800)
                 else:
                     InvOutManual = min(PowerPlus, 800) #energy meter P+
                 InvOutManual = InvOutManual if InvOutManual >= 0 else 0 #avoid negative value from calculations
@@ -266,22 +244,22 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
                 #because batt cuts off PV when 100%
                 if state.get('input_boolean.override_em') == 'on':
                     #log.warning(f"override_em")
-                    if BatteryCharge > 96:
+                    if int(input_number.battery_charge) > 96:
                         InvOutManual = 800
                 set_inv_out_manual(InvOutManual) #feed set or calculated target back to dashboard
 
             else: #Automation #take inv_out target from dashboard
                 InvOutManual = float(state.get('input_number.inv_out_manual'))
                 #log.warning(f"Manual InvOutManual {InvOutManual}")
-        new_permanentWatts = InvOutManual * 10
+        new_perm_w = InvOutManual * 10
 
         # ONLY PUT IF SETTINGS CHANGED
-        if not cur_permanentWatts == new_permanentWatts:
-            params = {"permanentWatts":new_permanentWatts}
+        if not cur_perm_w == new_perm_w: #== InvOutManual * 10
+            params = {"permanentWatts":new_perm_w}
+            cmdCode = 'WN511_SET_PERMANENT_WATTS_PACK' #used only once; next: use string itself
             payload = put_api(url,key,secret,{"sn":PsSnr,"cmdCode":cmdCode,"params":params})
-            return payload
+            return payload #why return?
 
     except Exception as e:
-        log.warning(f"Error fetching Ecoflow data {str(e)}") #: culprit!!?
-        print(f"Error fetching Ecoflow data: {str(e)}")
-        return 
+        log.warning(f"Error fetching Ecoflow data {str(e)}")
+        return

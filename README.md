@@ -8,9 +8,12 @@ Tamed: hot-running PowerStream<sup>1)</sup> + Delta 2 Max<sup>2)</sup> + limited
 <b>Manage PowerStream inverter_out_watts and Delta battery_charge with data from an energy meter (SHRDZM, Shelly Pro 3EM) using HA and the EcoFlow API, replacing a somewhat reality-detached app and SmartPlugs with compact, one-page browser dashboards on PC or mobile</b>
 </p>
 <p>
-<b>IMPORTANT NOTE PER 20240823: In another "stroke of genius" EcoFlow made their mobile app prerequisite for read-outs via the API.</b><br>
-IOW: Since mid August a HomeAssistant (dashboard) will only get (e.g. Delta charge_level) data when you bring the mobile app into the foreground and select the device.<br>
-Sorry to say: THIS OBLITERATES THE PYSCRIPT ALGO. If the capitalization sounds like annoyed shouting - it is.
+<b>IMPORTANT NOTE per 20240826: ONLY GOOD NEWS TODAY!</b><br>
+<a href="https://github.com/tolwi/hassio-ecoflow-cloud">tolwi with his EcoFlow Cloud</a> integration via HomeAssistant HACS apparently is hard at work to fix the data update issue.<br>
+(You have / had to bring the mobile app into the foreground to get updates in a HomeAssistant dashboard.)<br>
+Be sure to update to the latest version! (by the time of this writing v1.1.0-pre6 beta)<br>
+<b>I just finished rewriting the PyScript to use the official API.</b><br>
+The sample dashboards still use the sensor data directly. I will swap essential items with variables from the PyScript if data update problems persist.
 </p>
 <h3>Installation in HomeAssistant Supervised with HACS, EcoFlow Cloud and VS Code already in Place</h3>
 <p>
@@ -30,9 +33,10 @@ Running on top of HomeAssistant initially looked like a huge burden, complicatin
 </p>
 <h3>Version History</h3>
 <p>
+0.2.10 20240826 2000 OFFICIAL API with GENERIC func for all sensors; major clean-up<br>
 0.2.2 20240822 1420 Snr v Name conflicts quick fix after new Delta and PS re-add in HA<br>
-0.2.0 20240817 1600: logging quick fix (hopefully &#128517; ) while waiting for battery repair<br>
-0.1.8 20240810 1010: Initial <em>dump</em>
+0.2.0 20240817 1600 logging quick fix (hopefully &#128517; ) while waiting for battery repair<br>
+0.1.8 20240810 1010 Initial <em>dump</em>
 </p>
 <h3>Real-World Info</h3>
 <p>
