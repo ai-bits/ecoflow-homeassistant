@@ -13,7 +13,8 @@ Only a few hours ago (late last night) I wrote: <a href="https://github.com/tolw
 (You <b>had</b> to bring the mobile app into the foreground to get updates in a HomeAssistant dashboard.)<br>
 In this <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud/issues/283#issuecomment-2311400218"> EcoFlow Cloud issue comment</a> you find a solution</b> in the latest version, namely the choice to use the official API!<br>
 <b>I just finished rewriting the PyScript to use the official API</b> instead of relying on <code>hass.states.get()</code>.<br>
-The sample dashboards still use the sensor data directly. New today: Hopefully there will be no need for change when the HA EF Cloud integration runs smoothly again.
+The sample dashboards still use the sensor data directly. New today: Hopefully there will be no need for change when the HA EF Cloud integration runs smoothly again.<br>
+<b>As of today morning there seem to be issues with the EF Cloud Official API version, but as my PyScript now uses its own calls it seems to be fine.</b>
 </p>
 <h3>Installation in HomeAssistant Supervised with HACS, EcoFlow Cloud and VS Code already in Place</h3>
 <p>
