@@ -8,12 +8,12 @@ Tamed: hot-running PowerStream<sup>1)</sup> + Delta 2 Max<sup>2)</sup> + limited
 <b>Manage PowerStream inverter_out_watts and Delta battery_charge with data from an energy meter (SHRDZM, Shelly Pro 3EM) using HA and the EcoFlow API, replacing a somewhat reality-detached app and SmartPlugs with compact, one-page browser dashboards on PC or mobile</b>
 </p>
 <p>
-<b>IMPORTANT NOTE per 20240826: ONLY GOOD NEWS TODAY!</b><br>
-<a href="https://github.com/tolwi/hassio-ecoflow-cloud">tolwi with his EcoFlow Cloud</a> integration via HomeAssistant HACS apparently is hard at work to fix the data update issue.<br>
-(You have / had to bring the mobile app into the foreground to get updates in a HomeAssistant dashboard.)<br>
-Be sure to update to the latest version! (by the time of this writing v1.1.0-pre6 beta)<br>
-<b>I just finished rewriting the PyScript to use the official API.</b><br>
-The sample dashboards still use the sensor data directly. I will swap essential items with variables from the PyScript if data update problems persist.
+<b>IMPORTANT NOTE per 20240827: ONLY GOOD NEWS TODAY!</b><br>
+Only a few hours ago (late last night) I wrote: <a href="https://github.com/tolwi/hassio-ecoflow-cloud">tolwi with his EcoFlow Cloud</a> integration via HomeAssistant HACS apparently is hard at work to fix the data update issue.<br>
+(You <b>had</b> to bring the mobile app into the foreground to get updates in a HomeAssistant dashboard.)<br>
+In this <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud/issues/283#issuecomment-2311400218"> EcoFlow Cloud issue comment</a> you find a solution</b> in the latest version, namely the choice to use the official API!<br>
+<b>I just finished rewriting the PyScript to use the official API</b> instead of relying on <code>hass.states.get()</code>.<br>
+The sample dashboards still use the sensor data directly. New today: Hopefully there will be no need for change when the HA EF Cloud integration runs smoothly again.
 </p>
 <h3>Installation in HomeAssistant Supervised with HACS, EcoFlow Cloud and VS Code already in Place</h3>
 <p>
