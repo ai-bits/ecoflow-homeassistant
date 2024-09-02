@@ -1,0 +1,106 @@
+views:
+  - title: EcoFlow2test
+    panel: true
+    cards:
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+          - type: entities
+            title: null
+            show_header_toggle: false
+            entities:
+              - entity: sensor.shrdzm_c82b9620cf87_1_7_0
+                name: shrdzm P+ 1.7 Energy
+              - entity: sensor.shrdzm_c82b9620cf87_3_7_0
+                name: shrdzm Q+ 3.7
+              - entity: sensor.powerstream_1_inverter_output_watts
+                name: hw51 inverter_output_watts actual
+              - entity: input_number.inv_out_manual
+                name: inv_out_manual or auto target
+              - entity: sensor.powerstream_1_battery_input_watts
+                name: hw51 battery_input_watts
+              - entity: input_boolean.automate
+                name: Automation
+              - entity: input_boolean.morning
+                name: morning=supply PV-20% else P+
+              - entity: input_boolean.override_em
+                name: override_em (Energy Meter)
+              - entity: automation.ecoflow
+                type: button
+                tap_action:
+                  action: call-service
+                  service: automation.trigger
+                  target:
+                    entity_id: automation.ecoflow
+                name: Trigger EcoFlow Automation
+              - entity: input_number.solar_1_watts
+                name: hw51 solar_1_watts input_number.=PyScript
+              - entity: input_number.solar_2_watts
+                name: hw51 solar_2_watts input_number.=PyScript
+              - entity: sensor.solarman_total_ac_output_power_active
+                name: Deye Solarman PV power
+              - entity: sensor.sunrise_next_time
+              - entity: sensor.sunset_next_time
+              - entity: input_boolean.ef_loop
+                name: input_boolean.ef_loop
+              - entity: automation.ef_loop
+                type: button
+                tap_action:
+                  action: call-service
+                  service: automation.trigger
+                  target:
+                    entity_id: automation.ef_loop
+                name: Trigger EcoFlow Event Loop
+              - entity: sensor.powerstream_1_inverter_temperature
+                name: hw51 inverter_temp
+              - entity: sensor.powerstream_1_charge_time
+                name: hw51 charge_time
+          - type: entities
+            title: null
+            entities:
+              - entity: sensor.shrdzm_c82b9620cf87_2_7_0
+                name: shrdzm P- 2.7 Energy -
+              - entity: sensor.shrdzm_c82b9620cf87_4_7_0
+                name: shrdzm Q- 4.7
+              - entity: sensor.powerstream_1_battery_charge
+                name: hw51 battery_charge EF-Cloud
+              - entity: input_number.battery_charge
+                name: hw51 battery_charge PyScript
+              - entity: input_number.discharge_limit
+                name: discharge_limit 30-70%
+              - entity: sensor.delta_2_max_2_total_out_power
+                name: delta total_out_power
+              - entity: sensor.delta_2_max_2_dc_out_power
+                name: delta dc_out_power
+              - entity: sensor.powerstream_1_discharge_time
+                name: hw51 discharge_time
+              - entity: sensor.delta_2_max_2_total_in_power
+                name: delta total_in_power
+              - entity: sensor.delta_2_max_2_charge_remaining_time
+                name: delta charge_remaining_time
+              - entity: sensor.delta_2_max_2_solar_1_in_power
+                name: delta solar_1_in_power
+              - entity: sensor.delta_2_max_2_solar_2_in_power
+                name: delta solar_2_in_power
+              - entity: input_number.solar_2_in_power
+                name: delta solar_2_in_power input_number.=PyScript
+              - entity: sensor.delta_2_max_2_battery_level
+                name: delta battery_level EF-Cloud
+              - entity: sensor.delta_2_max_2_main_battery_level
+                name: delta main_battery_level EF-Cloud
+              - entity: switch.delta_2_max_2_backup_reserve_enabled
+                name: delta bk_reserve_enable
+              - entity: sensor.delta_2_max_2_ac_in_power
+                name: delta ac_in_power
+              - entity: sensor.delta_2_max_2_battery_temperature
+                name: delta battery_temp
+              - entity: sensor.delta_2_max_2_cycles
+                name: delta cycles
+              - entity: sensor.delta_2_max_2_state_of_health
+                name: delta state_of_health
+              - entity: select.delta_2_max_2_ac_timeout
+                name: delta ac_timeout
+              - entity: select.delta_2_max_2_unit_timeout
+                name: delta unit_timeout
+    type: panel
