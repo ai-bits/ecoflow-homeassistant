@@ -1,6 +1,6 @@
-# v0.2.10 20240826 2000 OFFICIAL API GENERIC for all; major clean-up
+# v0.2.13 20240902 0940 as get_ef()? see issue for description
 
-# get / set data via EF API
+# get / set data via EF official API
 # based on https://github.com/svenerbe/ecoflow_dynamic_power_adjustment
 
 # prerequisites to control inverter_output_watts on PowerStream:
@@ -146,14 +146,10 @@ def set_inv_out_manual(value):
     service.call("input_number", "set_value", entity_id="input_number.inv_out_manual", value=value)
 
 def set_morning(value, value2):
-    if value:
-        service.call("input_boolean", "turn_on", entity_id="input_boolean.morning")
-    else:
-        service.call("input_boolean", "turn_off", entity_id="input_boolean.morning")
-    if value2:
-        service.call("input_boolean", "turn_on", entity_id="input_boolean.ran_today")
-    else:
-        service.call("input_boolean", "turn_off", entity_id="input_boolean.ran_today")
+    if value: service.call("input_boolean", "turn_on", entity_id="input_boolean.morning")
+    else: service.call("input_boolean", "turn_off", entity_id="input_boolean.morning")
+    if value2: service.call("input_boolean", "turn_on", entity_id="input_boolean.ran_today")
+    else: service.call("input_boolean", "turn_off", entity_id="input_boolean.ran_today")
 
 #parameters with default (was: Automation=False) must go behind others
 @service
@@ -169,8 +165,8 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     # collect status of the devices
     payload = get_api(url_device,key,secret,{"sn":PsSnr})
     check_ps_status = check_if_device_is_online(PsSnr, payload)
-    PsName = 'powerstream_1' #will be derived from Snr in rewrite; quick fix where PsSnr didn't work any more after ha changes
-    DeltaName = 'delta_2_max_2'
+    #PsName = 'powerstream_1' #unnecessary; was quick fix where PsSnr didn't work any more after ha changes
+    #DeltaName = 'delta_2_max_2'
 
     #only pass secrets as parms; other values public anyway
     #parms added: ShrdzmSnr
@@ -178,16 +174,21 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     #, InvOutManual=None, was BatteryCharge=None, PowerPlus=None, Automation=False
     InvOutManual = float(state.get('input_number.inv_out_manual'))
 
+    #get_val for needed states; for field names see
+    #https://developer-eu.ecoflow.com/us/document/powerStreamMicroInverter
     cur_perm_w = get_val(["20_1.permanentWatts"], url, key, secret, PsSnr)
     cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
     input_number.battery_charge = get_val(["20_1.batSoc"], url, key, secret, PsSnr)
     input_number.solar_1_watts = round(get_val(["20_1.pv1InputWatts"], url, key, secret, PsSnr) / 10)
     input_number.solar_2_watts = round(get_val(["20_1.pv2InputWatts"], url, key, secret, PsSnr) / 10)
-    #was = float(hass.states.get('sensor.' + DeltaName + '_total_in_power').state)
-    input_number.total_in_power = get_val(["pd.wattsInSum"], url, key, secret, DeltaSnr)
-    #log.warning(f"input_number.total_in_power {input_number.total_in_power}")
-    pv_all = input_number.solar_1_watts + input_number.solar_2_watts + input_number.total_in_power
+    input_number.solar_1_in_power = get_val(["pd.pv1ChargeWatts"], url, key, secret, DeltaSnr)
+    input_number.solar_2_in_power = get_val(["pd.pv2ChargeWatts"], url, key, secret, DeltaSnr)
+    #log.warning(f"input_number.solar_1_in_power {input_number.solar_1_in_power}")
+    #log.warning(f"input_number.solar_2_in_power {input_number.solar_2_in_power}")
+    pv_all = input_number.solar_1_watts + input_number.solar_2_watts + input_number.solar_1_in_power + input_number.solar_2_in_power
 
+    input_number.total_in_power = get_val(["pd.wattsInSum"], url, key, secret, DeltaSnr)
+    #was = float(hass.states.get('sensor.' + DeltaName + '_total_in_power').state) #DeltaName unnecessary
     PowerPlus = int(state.get('sensor.shrdzm_' + ShrdzmSnr + '_1_7_0'))
     #log.warning(f"PowerPlus {PowerPlus}") #shrdzm 1.7 P+ in watts Wirkleistung aktueller Leistungsbezug momentane Leistungsaufnahme
     Automation = state.get('input_boolean.automate') == 'on'
