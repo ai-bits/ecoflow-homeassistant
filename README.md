@@ -8,13 +8,13 @@ Tamed: hot-running PowerStream<sup>1)</sup> + Delta 2 Max<sup>2)</sup> + limited
 <b>Manage PowerStream inverter_out_watts and Delta battery_charge with data from an energy meter (SHRDZM, Shelly Pro 3EM) using HA and the EcoFlow API, replacing a somewhat reality-detached app and SmartPlugs with compact, one-page browser dashboards on PC or mobile</b>
 </p>
 <p>
-<b>IMPORTANT NOTE per 20240827: ONLY GOOD NEWS TODAY!</b><br>
-Only a few hours ago (late last night) I wrote: <a href="https://github.com/tolwi/hassio-ecoflow-cloud">tolwi with his EcoFlow Cloud</a> integration via HomeAssistant HACS apparently is hard at work to fix the data update issue.<br>
-(You <b>had</b> to bring the mobile app into the foreground to get updates in a HomeAssistant dashboard.)<br>
-In this <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud/issues/283#issuecomment-2311400218"> EcoFlow Cloud issue comment</a> you find a solution</b> in the latest version, namely the choice to use the official API!<br>
-<b>I just finished rewriting the PyScript to use the official API</b> instead of relying on <code>hass.states.get()</code>.<br>
-The sample dashboards still use the sensor data directly. New today: Hopefully there will be no need for change when the HA EF Cloud integration runs smoothly again.<br>
-<b>As of today morning there seem to be issues with the EF Cloud Official API version, but as my PyScript now uses its own calls it seems to be fine.</b>
+<b>IMPORTANT NOTES per 20240902 evening CET</b><br>
+For a couple of days <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud">tolwi's hassio EcoFlow Cloud</a> integration via HomeAssistant HACS has been offering the choice to use the official API</b>, but still has (update) problems.<br>
+In this <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud/issues/283#issuecomment-2311400218"> issue comment</a> you find how to switch from app impersonation</b>, which has been actively blocked for two weeks by EF citing overload problems!<br>
+<b>A few days ago I finished rewriting the PyScript to use the official API</b> instead of relying on <code>hass.states.get()</code>.<br>
+The sample 1- and 2-column dashboards still use the sensor data directly.<br>
+<b>Find how to use my PyScript to only GET EF data, but reliably and NOT SET inverter_output_watts in this <a href="https://github.com/ai-bits/ecoflow-homeassistant/issues/1">issue.</a></b><br>
+While the EF broker - hassio EF Cloud integration combo has problems you can use the <code>dashboard-ecoflow-test.yaml</code> to compare values to my PyScript.<br>
 </p>
 <h3>Installation in HomeAssistant Supervised with HACS, EcoFlow Cloud and VS Code already in Place</h3>
 <p>
