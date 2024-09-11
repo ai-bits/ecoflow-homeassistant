@@ -1,4 +1,5 @@
-# v0.2.13 20240902 0940 as get_ef()? see issue for description
+# v0.2.16 20240911 2300 legacy code cleanup 3
+# 20240911: set sensor.powerstream_1_inverter_output_watts shows prev val; inv_out_target shown as out in app!!! EFC MQTT disconnect day
 
 # get / set data via EF official API
 # based on https://github.com/svenerbe/ecoflow_dynamic_power_adjustment
@@ -172,14 +173,14 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     #parms added: ShrdzmSnr
     #parms removed, replaced by direct state.get() when necessary:
     #, InvOutManual=None, was BatteryCharge=None, PowerPlus=None, Automation=False
-    InvOutManual = float(state.get('input_number.inv_out_manual'))
+    #inv_out_target by Manual or calculated by Auto, was InvOutManual = float(state.get('input_number.inv_out_manual')) #here unnecessary
 
     #get_val for needed states; for field names see
     #https://developer-eu.ecoflow.com/us/document/powerStreamMicroInverter
-    cur_perm_w = get_val(["20_1.permanentWatts"], url, key, secret, PsSnr)
+    cur_perm_w = get_val(["20_1.permanentWatts"], url, key, secret, PsSnr) #no str!
     cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
     input_number.battery_charge = get_val(["20_1.batSoc"], url, key, secret, PsSnr)
-    input_number.solar_1_watts = round(get_val(["20_1.pv1InputWatts"], url, key, secret, PsSnr) / 10)
+    input_number.solar_1_watts = round(get_val(["20_1.pv1InputWatts"], url, key, secret, PsSnr) / 10) #no str!
     input_number.solar_2_watts = round(get_val(["20_1.pv2InputWatts"], url, key, secret, PsSnr) / 10)
     input_number.solar_1_in_power = get_val(["pd.pv1ChargeWatts"], url, key, secret, DeltaSnr)
     input_number.solar_2_in_power = get_val(["pd.pv2ChargeWatts"], url, key, secret, DeltaSnr)
@@ -215,7 +216,7 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
 
     try:
         #gue
-        #InvOutManual target = DASHBOARD INPUT, actual out depends on batt full and feed-in ctl, inv temp throttling
+        #inv_out_target = calculated in Auto or Manual DASHBOARD INPUT, actual out depends on batt full and feed-in ctl, inv temp throttling
         #  WAS TotalPower was W ENERGY METER
         #inverter_output_watts see condition comments below
 
@@ -229,38 +230,51 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
             #W / 10 #tenths of watts #watts * 10
             #was: set 10W to avoid battery standby as unit_timeout keeps changing to 30 mins
             #is: delta automation to set unit_timeout to Never should keep it from standby
-            InvOutManual = 0 #in Morning fill up with all PV what idle and PS took during night
+            inv_out_target = 0 #in Morning fill up with all PV what idle and PS took during night
+            path = "charge<min"
         else:
-            #log.warning(f"Automation {Automation}")
             if Automation:
                 #inline comment problem: number not allowed after # in following expression?!
                 if Morning:
                     #min of pv_all - 20%, P+ and 800 to put most energy into home and at least charge a little
-                    InvOutManual = min(math.floor((pv_all - pv_all / 5) / 10) * 10, PowerPlus, 800)
+                    inv_out_target = min(math.floor((pv_all - pv_all / 5) / 10) * 10, PowerPlus, 800)
+                    path = "auto morning"
                 else:
-                    InvOutManual = min(PowerPlus, 800) #energy meter P+
-                InvOutManual = InvOutManual if InvOutManual >= 0 else 0 #avoid negative value from calculations
+                    inv_out_target = min(PowerPlus, 800) #energy meter P+
+                    path = "auto not morning"
+                inv_out_target = inv_out_target if inv_out_target >= 0 else 0 #avoid negative value from calculations
 
                 #override energy meter when batt>96% to push max into home and not waste
                 #because batt cuts off PV when 100%
                 if state.get('input_boolean.override_em') == 'on':
                     #log.warning(f"override_em")
                     if int(input_number.battery_charge) > 96:
-                        InvOutManual = 800
-                set_inv_out_manual(InvOutManual) #feed set or calculated target back to dashboard
+                        inv_out_target = 800
+                        path = path + "override and chg>96"
+                    else:
+                        pass
+                        path = path + "override and not chg>96"
+                set_inv_out_manual(inv_out_target) #feed set or calculated target back to dashboard
 
             else: #Automation #take inv_out target from dashboard
-                InvOutManual = float(state.get('input_number.inv_out_manual'))
-                #log.warning(f"Manual InvOutManual {InvOutManual}")
-        new_perm_w = InvOutManual * 10
+                inv_out_target = float(state.get('input_number.inv_out_manual'))
+                path = "manual"
+                #log.warning(f"Manual inv_out_target {inv_out_target}")
+        new_perm_w = inv_out_target * 10
 
         # ONLY PUT IF SETTINGS CHANGED
-        if not cur_perm_w == new_perm_w: #== InvOutManual * 10
+        if cur_perm_w == new_perm_w: #== inv_out_target * 10
+            pass
+            log.warning(f"{path} same inv_out_target {inv_out_target}")
+        else:
             params = {"permanentWatts":new_perm_w}
-            cmdCode = 'WN511_SET_PERMANENT_WATTS_PACK' #used only once; next: use string itself
-            payload = put_api(url,key,secret,{"sn":PsSnr,"cmdCode":cmdCode,"params":params})
-            return payload #why return?
+            #payload: 'code': '0', 'message': 'Success', 'eagleEyeTraceId'.., 'tid'
+            payload = put_api(url,key,secret,{"sn":PsSnr,"cmdCode":"WN511_SET_PERMANENT_WATTS_PACK","params":params})
+            cur_perm_w = get_val(["20_1.permanentWatts"], url, key, secret, PsSnr)
+            cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
+            sensor.powerstream_1_inverter_output_watts = cur_perm_w #actually previous value (before put_api())
+            log.warning(f"{path} inv_out_target {inv_out_target} sensor = cur_perm_w {cur_perm_w}") #inv_out_target shown as out in app!!!
 
     except Exception as e:
-        log.warning(f"Error fetching Ecoflow data {str(e)}")
+        log.warning(f"set_ef Error fetching Ecoflow data {str(e)}")
         return
