@@ -1,4 +1,4 @@
-# v0.3.4 20240902 1650 adding more puzzle items 2
+# v0.3.5 20240913 1720 minor; next: vars instead of state vars
 
 #same imports as set_ef.py
 import sys
@@ -13,6 +13,7 @@ from urllib.parse import urlencode
 #gue
 from datetime import datetime
 import math
+import traceback
 
 def get_map(json_obj, prefix=""):
     def flatten(obj, pre=""):
@@ -44,7 +45,7 @@ def rest_api(method, url, key, secret, params=None): #rest method parameterized
     elif method == "get": response = task.executor(requests.get, url, headers=headers, json=params)
     else: response = task.executor(requests.post, url, headers=headers, json=params) #"post"
     if response.status_code == 200: return response.json()
-    else: log.warning(f"rest {method}: {response.text}")
+    else: log.warning(f"rest_api {method} {response.text}")
 
 def check_if_device_is_online(SN=None, payload=None):
     parsed_data = payload
@@ -65,17 +66,16 @@ def get_val(quotas, url, key, secret, Snr):
     #log.warning(f"payload.status_code {payload.status_code}")
     if payload.status_code == 200:
         try:
-            d = payload.json()['data'][quotas[0]] #[0]!
-            #log.warning(f"d {d}")
-            return d
+            tmp = payload.json()['data'][quotas[0]] #[0]!
+            #log.warning(f"tmp {tmp}")
+            return tmp
         except KeyError as e:
+            pass #noop
             log.warning(f"Error accessing {quotas[0]} in payload")
             return 0
     else:
         log.warning(f"payload.status_code {quotas[0]} not 200")
         return 0
-
-##get_device_name from Snr when used instead of Snr
 
 # def set_ef_loop(value):
 #     service.call("input_number", "set_value", entity_id="input_number.ef_loop", value=value)
