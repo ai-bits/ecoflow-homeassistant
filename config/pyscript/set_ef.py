@@ -1,4 +1,4 @@
-# v0.2.16 20240911 2300 legacy code cleanup 3
+# v0.2.19 20240913 1200 homeass BS corrected: pv_all sum was str
 # 20240911: set sensor.powerstream_1_inverter_output_watts shows prev val; inv_out_target shown as out in app!!! EFC MQTT disconnect day
 
 # get / set data via EF official API
@@ -44,6 +44,7 @@ from urllib.parse import urlencode
 #gue
 from datetime import datetime
 import math
+import traceback
 
 def hmac_sha256(data, key):
     hashed = hmac.new(key.encode('utf-8'), data.encode('utf-8'), hashlib.sha256).digest()
@@ -180,13 +181,16 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     cur_perm_w = get_val(["20_1.permanentWatts"], url, key, secret, PsSnr) #no str!
     cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
     input_number.battery_charge = get_val(["20_1.batSoc"], url, key, secret, PsSnr)
-    input_number.solar_1_watts = round(get_val(["20_1.pv1InputWatts"], url, key, secret, PsSnr) / 10) #no str!
-    input_number.solar_2_watts = round(get_val(["20_1.pv2InputWatts"], url, key, secret, PsSnr) / 10)
-    input_number.solar_1_in_power = get_val(["pd.pv1ChargeWatts"], url, key, secret, DeltaSnr)
-    input_number.solar_2_in_power = get_val(["pd.pv2ChargeWatts"], url, key, secret, DeltaSnr)
+    input_number.solar_1_watts = float(get_val(["20_1.pv1InputWatts"], url, key, secret, PsSnr) / 10) #no str!
+    input_number.solar_2_watts = float(get_val(["20_1.pv2InputWatts"], url, key, secret, PsSnr) / 10)
+    #log.warning(f"input_number.solar_1_watts {input_number.solar_1_watts}")
+    #log.warning(f"input_number.solar_2_watts {input_number.solar_2_watts}")
+    input_number.solar_1_in_power = float(get_val(["pd.pv1ChargeWatts"], url, key, secret, DeltaSnr))
+    input_number.solar_2_in_power = float(get_val(["pd.pv2ChargeWatts"], url, key, secret, DeltaSnr))
     #log.warning(f"input_number.solar_1_in_power {input_number.solar_1_in_power}")
     #log.warning(f"input_number.solar_2_in_power {input_number.solar_2_in_power}")
-    pv_all = input_number.solar_1_watts + input_number.solar_2_watts + input_number.solar_1_in_power + input_number.solar_2_in_power
+    pv_all = float(input_number.solar_1_watts) + float(input_number.solar_2_watts) + float(input_number.solar_1_in_power) + float(input_number.solar_2_in_power)
+    #log.warning(f"pv_all {pv_all} type {type(pv_all)}")
 
     input_number.total_in_power = get_val(["pd.wattsInSum"], url, key, secret, DeltaSnr)
     #was = float(hass.states.get('sensor.' + DeltaName + '_total_in_power').state) #DeltaName unnecessary
@@ -261,7 +265,13 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
                 path = "manual"
                 #log.warning(f"Manual inv_out_target {inv_out_target}")
         new_perm_w = inv_out_target * 10
+    except Exception as e:
+        #traceback_str = traceback.format_exc()
+        log.warning(f"set_ef Error fetching Ecoflow data {str(e)}")
+        #log.warning(traceback_str)
+        return
 
+    try:
         # ONLY PUT IF SETTINGS CHANGED
         if cur_perm_w == new_perm_w: #== inv_out_target * 10
             pass
@@ -270,11 +280,15 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
             params = {"permanentWatts":new_perm_w}
             #payload: 'code': '0', 'message': 'Success', 'eagleEyeTraceId'.., 'tid'
             payload = put_api(url,key,secret,{"sn":PsSnr,"cmdCode":"WN511_SET_PERMANENT_WATTS_PACK","params":params})
+            log.warning(f"{path} inv_out_target {inv_out_target}")
+            task.sleep(10) #wait 10 secs for new check if cur_perm_w and sensor in dash are ACTUAL inv_out_w or last target
             cur_perm_w = get_val(["20_1.permanentWatts"], url, key, secret, PsSnr)
             cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
             sensor.powerstream_1_inverter_output_watts = cur_perm_w #actually previous value (before put_api())
-            log.warning(f"{path} inv_out_target {inv_out_target} sensor = cur_perm_w {cur_perm_w}") #inv_out_target shown as out in app!!!
+            log.warning(f"{path} sns=cur_perm_w {cur_perm_w}") #inv_out_target shown as out in app!!!
 
     except Exception as e:
-        log.warning(f"set_ef Error fetching Ecoflow data {str(e)}")
+        #traceback_str = traceback.format_exc()
+        log.warning(f"set_ef Error putting Ecoflow data {str(e)}")
+        #log.warning(traceback_str)
         return
