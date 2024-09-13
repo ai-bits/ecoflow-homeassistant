@@ -1,4 +1,4 @@
-# v0.3.4 20240902 1650 adding more puzzle items 2
+# v0.3.7 20240913 2310 check_if_device_is_online working
 
 #same imports as set_ef.py
 import sys
@@ -13,6 +13,7 @@ from urllib.parse import urlencode
 #gue
 from datetime import datetime
 import math
+import traceback
 
 def get_map(json_obj, prefix=""):
     def flatten(obj, pre=""):
@@ -44,7 +45,7 @@ def rest_api(method, url, key, secret, params=None): #rest method parameterized
     elif method == "get": response = task.executor(requests.get, url, headers=headers, json=params)
     else: response = task.executor(requests.post, url, headers=headers, json=params) #"post"
     if response.status_code == 200: return response.json()
-    else: log.warning(f"rest {method}: {response.text}")
+    else: log.warning(f"rest_api {method} {response.text}")
 
 def check_if_device_is_online(SN=None, payload=None):
     parsed_data = payload
@@ -65,22 +66,20 @@ def get_val(quotas, url, key, secret, Snr):
     #log.warning(f"payload.status_code {payload.status_code}")
     if payload.status_code == 200:
         try:
-            d = payload.json()['data'][quotas[0]] #[0]!
-            #log.warning(f"d {d}")
-            return d
+            tmp = payload.json()['data'][quotas[0]] #[0]!
+            #log.warning(f"tmp {tmp}")
+            return tmp
         except KeyError as e:
+            pass #noop
             log.warning(f"Error accessing {quotas[0]} in payload")
             return 0
     else:
         log.warning(f"payload.status_code {quotas[0]} not 200")
         return 0
 
-##get_device_name from Snr when used instead of Snr
-
-# def set_ef_loop(value):
-#     service.call("input_number", "set_value", entity_id="input_number.ef_loop", value=value)
-def set_ef_loop(hass, value=None): #Copilot suggestion NOGO
-    hass.services.call("input_select", "select_option", {"entity_id": "input_select.ef_loop", "option": value})
+def set_ef_loop(value):
+    if value: service.call("input_boolean", "turn_on", entity_id="input_boolean.ef_loop")
+    else: service.call("input_boolean", "turn_off", entity_id="input_boolean.ef_loop")
 
 def set_inv_out_manual(value):
     service.call("input_number", "set_value", entity_id="input_number.inv_out_manual", value=value)
@@ -93,17 +92,16 @@ def set_morning(value, value2):
 
 @service
 def ef_loop(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, ShrdzmSnr=None):
-    if PsSnr is None: #PsName, DeltaName not necessary any more
+    if PsSnr is None: #args camel-cased #PsName, DeltaName not necessary any more
         log.warning(f"PsSnr=None, exiting") 
-        return #instead: input_boolean.ef_loop = "off"
+        set_ef_loop(False)
     url = 'https://api-e.ecoflow.com/iot-open/sign/device/quota' #api-e. instead of api. according to Günther Nid FB
     #use <method> arg v <method>_api(), str v url_const, EcoflowKey v key & EcoflowSecret v secret
     payload = rest_api('get','https://api-e.ecoflow.com/iot-open/sign/device/list',EcoflowKey,EcoflowSecret,{"sn":PsSnr})
-    log.warning(f"payload {payload}") #online devices json: PS & Delta
-    #instead of assigning unused check_ps_status
-    #if not check_if_device_is_online(PsSnr, payload) == "online"
-    #log.warning(f"{check_if_device_is_online(PsSnr, payload)}")
-    #set_ef_loop(hass, "off") #hangs ha!?
+    #log.warning(f"rest_api get payload online devices json {payload}")
+    if not check_if_device_is_online(PsSnr, payload) == "online":
+        log.warning(f"PS offline")
+        set_ef_loop(False)
 
     i = 1
     while state.get("input_boolean.ef_loop") == "on":
