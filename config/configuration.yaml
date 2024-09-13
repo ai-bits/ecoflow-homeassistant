@@ -1,4 +1,4 @@
-# for version of 20240911 2330 morning: initial: true
+# for version of 20240913 1200 and later
 # Loads default set of integrations. Do not remove.
 default_config:
 
@@ -53,28 +53,28 @@ input_number:
     min: 0
     max: 500
     unit_of_measurement: "W"
-    initial: 0
+    initial: 0.0
     mode: box
   solar_2_watts:
     name: solar_2_watts
     min: 0
     max: 500
     unit_of_measurement: "W"
-    initial: 0
+    initial: 0.0
     mode: box
   solar_1_in_power:
     name: delta_solar_1
     min: 0
     max: 1000
     unit_of_measurement: "W"
-    initial: 0
+    initial: 0.0
     mode: box
   solar_2_in_power:
     name: delta_solar_2
     min: 0
     max: 1000
     unit_of_measurement: "W"
-    initial: 0
+    initial: 0.0
     mode: box
   total_in_power:
     name: delta_total_in_power
@@ -103,7 +103,7 @@ input_boolean:
     name: override_em
     initial: False
   ef_loop:
-    initial: true
+    initial: True
 
 sensor:
   - platform: template
