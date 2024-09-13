@@ -8,12 +8,11 @@ Tamed: hot-running PowerStream<sup>1)</sup> + Delta 2 Max<sup>2)</sup> + limited
 <b>Manage PowerStream inverter_out_watts and Delta battery_charge with data from an energy meter (SHRDZM, Shelly Pro 3EM) using HA and the EcoFlow API, replacing a somewhat reality-detached app and SmartPlugs with compact, one-page browser dashboards on PC or mobile</b>
 </p>
 <p>
-<b>IMPORTANT NOTES per 20240902 evening CET</b><br>
-For a couple of days <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud">tolwi's hassio EcoFlow Cloud</a> integration via HomeAssistant HACS has been offering the choice to use the official API</b>, but still has (update) problems.<br>
-In this <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud/issues/283#issuecomment-2311400218"> issue comment</a> you find how to switch from app impersonation</b>, which has been actively blocked for two weeks by EF citing overload problems!<br>
-<b>A few days ago I finished rewriting the PyScript to use the official API</b> instead of relying on <code>hass.states.get()</code>.<br>
+<b>IMPORTANT NOTES per 20240913</b><br>
+<b><a href="https://github.com/tolwi/hassio-ecoflow-cloud">tolwi's hassio EcoFlow Cloud</a> integration via HomeAssistant HACS now offers the choice to use the official API</b>.<br>
+In this <b><a href="https://github.com/tolwi/hassio-ecoflow-cloud/issues/283#issuecomment-2311400218"> issue comment</a> you find how to switch from app impersonation</b>, which is actively blocked by EF citing overload problems!<br>
+<b>My PyScript now uses the official API</b> instead of relying on <code>hass.states.get()</code>.<br>
 The sample 1- and 2-column dashboards still use the sensor data directly.<br>
-<b>Find how to use my PyScript to only GET EF data, but reliably and NOT SET inverter_output_watts in this <a href="https://github.com/ai-bits/ecoflow-homeassistant/issues/1">issue.</a></b><br>
 While the EF broker - hassio EF Cloud integration combo has problems you can use the <code>dashboard-ecoflow-test.yaml</code> to compare values to my PyScript.<br>
 </p>
 <h3>Installation in HomeAssistant Supervised with HACS, EcoFlow Cloud and VS Code already in Place</h3>
@@ -34,6 +33,7 @@ Running on top of HomeAssistant initially looked like a huge burden, complicatin
 </p>
 <h3>Version History</h3>
 <p>
+0.2.19 20240913 1200 homeass BS corrected: pv_all sum was str
 0.2.10 20240826 2000 OFFICIAL API with GENERIC func for all sensors; major clean-up<br>
 0.2.2 20240822 1420 Snr v Name conflicts quick fix after new Delta and PS re-add in HA<br>
 0.2.0 20240817 1600 logging quick fix (hopefully &#128517; ) while waiting for battery repair<br>
