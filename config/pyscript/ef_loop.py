@@ -1,4 +1,4 @@
-# v0.3.7 20240913 2310 check_if_device_is_online working
+# v0.3.8 20240914 2210 different rest_api("post") return BS kludged
 
 #same imports as set_ef.py
 import sys
@@ -43,11 +43,13 @@ def rest_api(method, url, key, secret, params=None): #rest method parameterized
     headers['sign'] = hmac_sha256(sign_str, secret)
     if method == "put": response = task.executor(requests.put, url, headers=headers, json=params)
     elif method == "get": response = task.executor(requests.get, url, headers=headers, json=params)
-    else: response = task.executor(requests.post, url, headers=headers, json=params) #"post"
-    if response.status_code == 200: return response.json()
-    else: log.warning(f"rest_api {method} {response.text}")
+    elif method == "post": response = task.executor(requests.post, url, headers=headers, json=params)
+    else: log.warning(f"rest_api method {method} not covered; only put get post")
+    log.warning(f"method {method}; response {response} .status_code {response.status_code} .json() {response.json()} .text=.json() w/o spaces")
+    if response.status_code == 200: return response if method == "post" else response.json()
+    else: log.warning(f"rest_api {method} response.json() {response.json()}")
 
-def check_if_device_is_online(SN=None, payload=None):
+def device_online(SN=None, payload=None):
     parsed_data = payload
     desired_device_sn = SN
     device_found = False
@@ -62,9 +64,9 @@ def check_if_device_is_online(SN=None, payload=None):
 def get_val(quotas, url, key, secret, Snr):
     params = {"quotas": quotas}
     #log.warning(f"params {params}")
-    payload = post_api(url, key, secret, {"sn":Snr,"params":params})
-    #log.warning(f"payload.status_code {payload.status_code}")
-    if payload.status_code == 200:
+    payload = rest_api("post", url, key, secret, {"sn":Snr,"params":params})
+    #log.warning(f"payload.status_code {payload}") 
+    if payload.status_code == 200: #response <Response [200]> if method == "post" else response.json()
         try:
             tmp = payload.json()['data'][quotas[0]] #[0]!
             #log.warning(f"tmp {tmp}")
@@ -97,14 +99,26 @@ def ef_loop(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrd
         set_ef_loop(False)
     url = 'https://api-e.ecoflow.com/iot-open/sign/device/quota' #api-e. instead of api. according to Günther Nid FB
     #use <method> arg v <method>_api(), str v url_const, EcoflowKey v key & EcoflowSecret v secret
-    payload = rest_api('get','https://api-e.ecoflow.com/iot-open/sign/device/list',EcoflowKey,EcoflowSecret,{"sn":PsSnr})
+    payload = rest_api('get','https://api-e.ecoflow.com/iot-open/sign/device/list', EcoflowKey, EcoflowSecret, {"sn":PsSnr})
     #log.warning(f"rest_api get payload online devices json {payload}")
-    if not check_if_device_is_online(PsSnr, payload) == "online":
+    if not device_online(PsSnr, payload) == "online":
         log.warning(f"PS offline")
         set_ef_loop(False)
+    Morning = state.get('input_boolean.morning') == 'on'
+    RanToday = state.get('input_boolean.ran_today') == 'on'
+    if datetime.now().strftime('%H:%M') == state.get('sensor.sunrise_next_time'): #sunrise
+        Morning = True
+        RanToday = False
+    input_number.battery_charge = get_val(["20_1.batSoc"], url, EcoflowKey, EcoflowSecret, PsSnr)
+    if Morning and int(input_number.battery_charge) == 100:
+        Morning = False
+        RanToday = True
+    set_morning(Morning, RanToday) #feed back Morning to morning and RanToday to ran_today
 
     i = 1
     while state.get("input_boolean.ef_loop") == "on":
+        PowerPlus = int(state.get('sensor.shrdzm_' + ShrdzmSnr + '_1_7_0'))
+        log.warning(f"PowerPlus {PowerPlus}") #shrdzm 1.7 P+ in watts Wirkleistung aktueller Leistungsbezug momentane Leistungsaufnahme
         #log.warning(f"i {i}")
         if i < 60:
             i += 1
