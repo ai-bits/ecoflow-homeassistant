@@ -1,4 +1,4 @@
-# v0.2.19 20240913 1200 homeass BS corrected: pv_all sum was str
+# v0.2.19 20240913 1700 homeass BS corrected: pv_all sum was str
 # 20240911: set sensor.powerstream_1_inverter_output_watts shows prev val; inv_out_target shown as out in app!!! EFC MQTT disconnect day
 
 # get / set data via EF official API
@@ -124,7 +124,7 @@ def get_val(quotas, url, key, secret, Snr):
     params = {"quotas": quotas}
     #log.warning(f"params {params}")
     payload = post_api(url, key, secret, {"sn":Snr,"params":params})
-    #log.warning(f"payload.status_code {payload.status_code}")
+    #log.warning(f"payload.status_code {payload}") #.status_code
     if payload.status_code == 200:
         try:
             d = payload.json()['data'][quotas[0]] #[0]!
@@ -256,7 +256,7 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
                         inv_out_target = 800
                         path = path + "override and chg>96"
                     else:
-                        pass
+                        pass #noop
                         path = path + "override and not chg>96"
                 set_inv_out_manual(inv_out_target) #feed set or calculated target back to dashboard
 
@@ -274,7 +274,7 @@ def set_ef(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrdz
     try:
         # ONLY PUT IF SETTINGS CHANGED
         if cur_perm_w == new_perm_w: #== inv_out_target * 10
-            pass
+            pass #noop
             log.warning(f"{path} same inv_out_target {inv_out_target}")
         else:
             params = {"permanentWatts":new_perm_w}
