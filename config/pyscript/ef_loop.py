@@ -1,5 +1,4 @@
-# v0.3.10 20240917 1900 task.sleep() with old loop items working
-
+# v0.3.11 20240924 2150 try in rest_api() to avoid exception
 #same imports as set_ef.py
 import sys
 import json
@@ -41,11 +40,14 @@ def rest_api(method, url, key, secret, params=None): #rest method parameterized
     headers   = {'accessKey':key,'nonce':nonce,'timestamp':timestamp}
     sign_str  = (get_qstr(get_map(params)) + '&' if params else '') + get_qstr(headers)
     headers['sign'] = hmac_sha256(sign_str, secret)
-    if method == "put": response = task.executor(requests.put, url, headers=headers, json=params)
-    elif method == "get": response = task.executor(requests.get, url, headers=headers, json=params)
-    elif method == "post": response = task.executor(requests.post, url, headers=headers, json=params)
-    else: log.warning(f"rest_api method {method} not covered; only put get post")
-    #log.warning(f"method {method}; response {response} .status_code {response.status_code} .json() {response.json()} .text=.json() w/o spaces")
+    try:
+        if method == "put": response = task.executor(requests.put, url, headers=headers, json=params)
+        elif method == "get": response = task.executor(requests.get, url, headers=headers, json=params)
+        elif method == "post": response = task.executor(requests.post, url, headers=headers, json=params)
+        else: log.warning(f"rest_api method {method} not covered; only put get post")
+        #log.warning(f"method {method}; response {response} .status_code {response.status_code} .json() {response.json()} .text=.json() w/o spaces")
+    except Exception as e:
+        log.warning(f"rest_api {method} exception {e}")
     if response.status_code == 200: return response if method == "post" else response.json()
     else: log.warning(f"rest_api {method} response.json() {response.json()}")
 
@@ -117,17 +119,24 @@ def ef_loop(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrd
         RanToday = True
     set_morning(Morning, RanToday) #feed back Morning to morning and RanToday to ran_today
 
-    sleep = 30
+    sleep = 60
     while state.get("input_boolean.ef_loop") == "on":
-        cur_perm_w = get_val(["20_1.permanentWatts"], url, EcoflowKey, EcoflowSecret, PsSnr) #no str!
+        cur_perm_w = get_val(["20_1.permanentWatts"], url, EcoflowKey, EcoflowSecret, PsSnr)
         cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
         input_number.battery_charge = get_val(["20_1.batSoc"], url, EcoflowKey, EcoflowSecret, PsSnr)
-        input_number.solar_1_watts = float(get_val(["20_1.pv1InputWatts"], url, EcoflowKey, EcoflowSecret, PsSnr) / 10) #no str!
+        #sensor.powerstream_1_battery_charge = input_number.battery_charge #for dash when EFC nogo
+        state.set("sensor.powerstream_1_battery_charge", value=input_number.battery_charge)
+        ##log.warning(f"sensor.powerstream_1_battery_charge {sensor.powerstream_1_battery_charge}")
+        input_number.solar_1_watts = float(get_val(["20_1.pv1InputWatts"], url, EcoflowKey, EcoflowSecret, PsSnr) / 10)
+        sensor.powerstream_1_solar_1_watts = input_number.solar_1_watts
         input_number.solar_2_watts = float(get_val(["20_1.pv2InputWatts"], url, EcoflowKey, EcoflowSecret, PsSnr) / 10)
+        sensor.powerstream_1_solar_2_watts = input_number.solar_2_watts
         #log.warning(f"input_number.solar_1_watts {input_number.solar_1_watts}")
         #log.warning(f"input_number.solar_2_watts {input_number.solar_2_watts}")
         input_number.solar_1_in_power = float(get_val(["pd.pv1ChargeWatts"], url, EcoflowKey, EcoflowSecret, DeltaSnr))
+        sensor.delta_2_max_2_solar_1_in_power = input_number.solar_1_in_power
         input_number.solar_2_in_power = float(get_val(["pd.pv2ChargeWatts"], url, EcoflowKey, EcoflowSecret, DeltaSnr))
+        sensor.delta_2_max_2_solar_2_in_power = input_number.solar_2_in_power
         #log.warning(f"input_number.solar_1_in_power {input_number.solar_1_in_power}")
         #log.warning(f"input_number.solar_2_in_power {input_number.solar_2_in_power}")
         pv_all = float(input_number.solar_1_watts) + float(input_number.solar_2_watts) + float(input_number.solar_1_in_power) + float(input_number.solar_2_in_power)
@@ -136,7 +145,7 @@ def ef_loop(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrd
         input_number.total_in_power = get_val(["pd.wattsInSum"], url, EcoflowKey, EcoflowSecret, DeltaSnr)
         #was = float(hass.states.get('sensor.' + DeltaName + '_total_in_power').state) #DeltaName unnecessary
         PowerPlus = int(state.get('sensor.shrdzm_' + ShrdzmSnr + '_1_7_0'))
-        log.warning(f"PowerPlus {PowerPlus}") #shrdzm 1.7 P+ in watts Wirkleistung aktueller Leistungsbezug momentane Leistungsaufnahme
+        ##log.warning(f"PowerPlus {PowerPlus}") #shrdzm 1.7 P+ in watts Wirkleistung aktueller Leistungsbezug momentane Leistungsaufnahme
 
         Automation = state.get('input_boolean.automate') == 'on'
         if int(input_number.battery_charge) < float(state.get('input_number.discharge_limit')):
@@ -184,7 +193,7 @@ def ef_loop(EcoflowKey=None, EcoflowSecret=None, PsSnr=None, DeltaSnr=None, Shrd
                 params = {"permanentWatts":new_perm_w}
                 #payload: 'code': '0', 'message': 'Success', 'eagleEyeTraceId'.., 'tid'
                 payload = rest_api("put", url, EcoflowKey, EcoflowSecret, {"sn":PsSnr,"cmdCode":"WN511_SET_PERMANENT_WATTS_PACK","params":params})
-                log.warning(f"{path} inv_out_target {inv_out_target}")
+                ##log.warning(f"{path} inv_out_target {inv_out_target}")
                 task.sleep(10) #wait 10 secs for new check if cur_perm_w and sensor in dash are ACTUAL inv_out_w or last target
                 cur_perm_w = get_val(["20_1.permanentWatts"], url, EcoflowKey, EcoflowSecret, PsSnr)
                 cur_perm_w = cur_perm_w if cur_perm_w == 0 else round(cur_perm_w / 10)
